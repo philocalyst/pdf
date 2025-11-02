@@ -5,4 +5,4 @@ edition = "2024"
 
 [dependencies]
 vello_svg = "0.8.0"
-xilem = "0.4.0"
+xilem = {path = "/Users/philocalyst/Downloads/xilem/xilem"}
