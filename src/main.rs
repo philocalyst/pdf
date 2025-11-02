@@ -45,8 +45,8 @@ fn render_svg_to_canvas(svg_str: &'static str) -> impl WidgetView<MainState> {
 }
 
 fn app(state: &mut MainState) -> impl WidgetView<MainState> + use<> {
-    let svg1 = include_str!("/Users/philocalyst/Downloads/hayro/hayro-svg/rendered_0.svg");
-    let svg2 = include_str!("/Users/philocalyst/Downloads/hayro/hayro-svg/examples/rendered_0.svg");
+    let svg1 = include_str!("../testing_pdfs/rendered_1.svg");
+    let svg2 = include_str!("../testing_pdfs/rendered_0.svg");
 
     virtual_scroll(0..2, move |state, index| {
         let svg = match index {
