@@ -1,0 +1,4 @@
+[submodule "xilem"]
+	path = xilem
+	url = https://github.com/philocalyst/xilem
+	branch = canvas_widget_again
