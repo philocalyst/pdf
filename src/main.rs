@@ -13,8 +13,7 @@ enum MainState {
 fn main() -> Result<(), EventLoopError> {
     println!("Hello, world!");
 
-    run(EventLoop::with_user_event());
-    Ok(())
+    run(EventLoop::with_user_event())
 }
 
 fn run(event_loop: EventLoopBuilder) -> Result<(), EventLoopError> {
