@@ -49,8 +49,12 @@ fn app(state: &mut MainState) -> impl WidgetView<MainState> + use<> {
     let svg1 = include_str!("/Users/philocalyst/Downloads/hayro/hayro-svg/rendered_0.svg");
     let svg2 = include_str!("/Users/philocalyst/Downloads/hayro/hayro-svg/examples/rendered_0.svg");
 
-    virtual_scroll(0..1, move |state, index| {
-        flex_col((render_svg_to_canvas(svg2), render_svg_to_canvas(svg1)))
-            .padding(Padding::from(200.0))
+    virtual_scroll(0..2, move |state, index| {
+        let svg = match index {
+            0 => svg1,
+            1 => svg2,
+            _ => unreachable!(),
+        };
+        render_svg_to_canvas(svg)
     })
 }
