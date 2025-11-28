@@ -5,6 +5,7 @@ use xilem::{Affine, EventLoop, EventLoopBuilder, WidgetView, WindowOptions, Xile
 
 struct MainState {
 	canvas_size: (f64, f64),
+	zoom_level:  u16,
 }
 
 fn main() -> Result<(), EventLoopError> {
@@ -22,7 +23,7 @@ fn main() -> Result<(), EventLoopError> {
 
 fn run(event_loop: EventLoopBuilder) -> Result<(), EventLoopError> {
 	Xilem::new_simple(
-		MainState { canvas_size: (500f64, 500f64) },
+		MainState { canvas_size: (500f64, 500f64), zoom_level: 1 },
 		app,
 		WindowOptions::new("A PDF Application"),
 	)
@@ -84,6 +85,6 @@ fn app(_state: &mut MainState) -> impl WidgetView<Edit<MainState>> + use<> {
 			_ => unreachable!(),
 		};
 
-		transformed(state.render_svg_to_canvas(svg)).transform(Affine::scale(2f64))
+		transformed(state.render_svg_to_canvas(svg)).transform(Affine::scale(state.zoom_level as f64))
 	})
 }
