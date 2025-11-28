@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
 use tracing::{debug, info};
+use vello_svg::vello;
 use xilem::{Affine, EventLoop, EventLoopBuilder, WidgetView, WindowOptions, Xilem, core::Edit, masonry::{kurbo::Size, properties::types::Length, widgets::ResizeObserver}, view::{PointerButton, button_any_pointer, canvas, resize_observer, sized_box, transformed, virtual_scroll}, winit::error::EventLoopError};
 
 struct MainState {
 	canvas_size: (f64, f64),
 	zoom_level:  u16,
+	pages:       Vec<Arc<vello::Scene>>,
 }
 
 fn main() -> Result<(), EventLoopError> {
@@ -22,8 +24,15 @@ fn main() -> Result<(), EventLoopError> {
 }
 
 fn run(event_loop: EventLoopBuilder) -> Result<(), EventLoopError> {
+	// Parse the SVGs at startup
+	let svg1 = include_str!("../testing_pdfs/rendered_2.svg");
+	let svg2 = include_str!("../testing_pdfs/rendered_0.svg");
+
+	let svg_scenes =
+		vec![Arc::new(vello_svg::render(svg1).unwrap()), Arc::new(vello_svg::render(svg2).unwrap())];
+
 	Xilem::new_simple(
-		MainState { canvas_size: (500f64, 500f64), zoom_level: 1 },
+		MainState { canvas_size: (500f64, 500f64), zoom_level: 1, pages: svg_scenes },
 		app,
 		WindowOptions::new("A PDF Application"),
 	)
@@ -34,11 +43,10 @@ impl MainState {
 	fn render_svg_to_canvas(
 		&self,
 		svg_str: &'static str,
+		svg_scene: Arc<vello::Scene>,
 	) -> impl WidgetView<Edit<MainState>> + use<> {
 		debug!("Rendering SVG to canvas");
-
-		// Parse SVG and generate Vello scene
-		let svg_scene = vello_svg::render(svg_str).unwrap();
+		// Parse SVG to get dimensions
 		let tree = usvg::Tree::from_str(svg_str, &usvg::Options::default()).unwrap();
 
 		// Obtain the size for intial rendering canvas
@@ -77,8 +85,6 @@ fn app(_state: &mut MainState) -> impl WidgetView<Edit<MainState>> + use<> {
 	let svg1 = include_str!("../testing_pdfs/rendered_2.svg");
 	let svg2 = include_str!("../testing_pdfs/rendered_0.svg");
 
-	// TODO: Track zoom level and intercept mouse events
-
 	virtual_scroll(0..2, move |state: &mut MainState, index| {
 		debug!("Virtual scroll rendering item {}", index);
 		let svg = match index {
@@ -87,18 +93,22 @@ fn app(_state: &mut MainState) -> impl WidgetView<Edit<MainState>> + use<> {
 			_ => unreachable!(),
 		};
 
-		button_any_pointer(state.render_svg_to_canvas(svg), move |state: &mut MainState, button| {
-			let button_name = match button {
-				None => "Touch/Keyboard".to_string(),
-				Some(PointerButton::Primary) => "Left Click".to_string(),
-				Some(PointerButton::Secondary) => "Right Click".to_string(),
-				Some(PointerButton::Auxiliary) => "Middle Click".to_string(),
-				_ => "nah".to_string(),
-			};
+		// Get the pre-parsed scene for this index
+		let svg_scene = state.pages[index as usize].clone();
 
-			state.zoom_level += 1;
-
-			tracing::info!("clicked with: {}", button_name);
-		})
+		button_any_pointer(
+			state.render_svg_to_canvas(svg, svg_scene),
+			move |state: &mut MainState, button| {
+				let button_name = match button {
+					None => "Touch/Keyboard".to_string(),
+					Some(PointerButton::Primary) => "Left Click".to_string(),
+					Some(PointerButton::Secondary) => "Right Click".to_string(),
+					Some(PointerButton::Auxiliary) => "Middle Click".to_string(),
+					_ => "nah".to_string(),
+				};
+				state.zoom_level += 1;
+				tracing::info!("clicked with: {}", button_name);
+			},
+		)
 	})
 }
