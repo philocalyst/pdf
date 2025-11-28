@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use tracing::{debug, info};
-use xilem::{Affine, EventLoop, EventLoopBuilder, WidgetView, WindowOptions, Xilem, core::Edit, masonry::properties::types::Length, view::{canvas, sized_box, virtual_scroll}, winit::error::EventLoopError};
+use xilem::{Affine, EventLoop, EventLoopBuilder, WidgetView, WindowOptions, Xilem, core::Edit, masonry::{properties::types::Length, widgets::ResizeObserver}, view::{canvas, resize_observer, sized_box, virtual_scroll}, winit::error::EventLoopError};
 
 enum MainState {
 	Online,
@@ -62,6 +62,13 @@ fn app(_state: &mut MainState) -> impl WidgetView<Edit<MainState>> + use<> {
 			1 => svg2,
 			_ => unreachable!(),
 		};
-		render_svg_to_canvas(svg)
+		let canvas = render_svg_to_canvas(svg);
+
+		resize_observer(
+			|_state: &mut MainState, size| {
+				tracing::info!("Canvas resized to: {:?}", size);
+			},
+			canvas,
+		)
 	})
 }
