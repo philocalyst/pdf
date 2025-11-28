@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use tracing::{debug, info};
-use xilem::{Affine, EventLoop, EventLoopBuilder, WidgetView, WindowOptions, Xilem, core::Edit, masonry::{properties::types::Length, widgets::ResizeObserver}, view::{canvas, resize_observer, sized_box, virtual_scroll}, winit::error::EventLoopError};
+use xilem::{Affine, EventLoop, EventLoopBuilder, WidgetView, WindowOptions, Xilem, core::Edit, masonry::{kurbo::Size, properties::types::Length, widgets::ResizeObserver}, view::{canvas, resize_observer, sized_box, virtual_scroll}, winit::error::EventLoopError};
 
-enum MainState {
-	Online,
+struct MainState {
+	canvas_size: (f64, f64),
 }
 
 fn main() -> Result<(), EventLoopError> {
@@ -21,8 +21,12 @@ fn main() -> Result<(), EventLoopError> {
 }
 
 fn run(event_loop: EventLoopBuilder) -> Result<(), EventLoopError> {
-	Xilem::new_simple(MainState::Online, app, WindowOptions::new("A PDF Application"))
-		.run_in(event_loop)
+	Xilem::new_simple(
+		MainState { canvas_size: (500f64, 500f64) },
+		app,
+		WindowOptions::new("A PDF Application"),
+	)
+	.run_in(event_loop)
 }
 
 impl MainState {
@@ -40,23 +44,25 @@ impl MainState {
 		let svg_size = tree.size();
 		debug!("SVG size: {}x{}", svg_size.width(), svg_size.height());
 
+		let (width, height) = self.canvas_size.clone();
+
 		let canvas_view = sized_box(canvas(Arc::new(move |scene, size| {
 			tracing::trace!("Canvas draw callback invoked with size: {:?}", size);
 
 			// Compute scaling
-			let scale_x = size.width / svg_size.width() as f64;
+			let scale_x = size.width / width;
 
 			// Uniform scaling about SVG center
-			let transform =
-				Affine::scale_about(scale_x, (svg_size.width() / 2.0, svg_size.height() / 2.0));
+			let transform = Affine::scale_about(scale_x, (width / 2.0, height / 2.0));
 
 			scene.append(&svg_scene, Some(transform));
 		})))
-		.height(Length::px((svg_size.height() + 400f32) as f64));
+		.height(Length::px(height));
 
 		resize_observer(
-			|_state: &mut MainState, size| {
+			|state: &mut MainState, size| {
 				tracing::info!("Canvas resized to: {:?}", size);
+				state.canvas_size = (size.width, size.height)
 			},
 			canvas_view,
 		)
