@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use tracing::{debug, info};
-use xilem::{Affine, EventLoop, EventLoopBuilder, WidgetView, WindowOptions, Xilem, core::Edit, masonry::{kurbo::Size, properties::types::Length, widgets::ResizeObserver}, view::{canvas, resize_observer, sized_box, transformed, virtual_scroll}, winit::error::EventLoopError};
+use xilem::{Affine, EventLoop, EventLoopBuilder, WidgetView, WindowOptions, Xilem, core::Edit, masonry::{kurbo::Size, properties::types::Length, widgets::ResizeObserver}, view::{PointerButton, button_any_pointer, canvas, resize_observer, sized_box, transformed, virtual_scroll}, winit::error::EventLoopError};
 
 struct MainState {
 	canvas_size: (f64, f64),
@@ -60,13 +60,15 @@ impl MainState {
 		})))
 		.height(Length::px(height));
 
-		resize_observer(
+		let with_observer = resize_observer(
 			|state: &mut MainState, size| {
 				info!("Canvas resized to: {:?}", size);
 				state.canvas_size = (size.width, size.height)
 			},
 			canvas_view,
-		)
+		);
+
+		transformed(with_observer).transform(Affine::scale(self.zoom_level as f64))
 	}
 }
 
@@ -85,6 +87,18 @@ fn app(_state: &mut MainState) -> impl WidgetView<Edit<MainState>> + use<> {
 			_ => unreachable!(),
 		};
 
-		transformed(state.render_svg_to_canvas(svg)).transform(Affine::scale(state.zoom_level as f64))
+		button_any_pointer(state.render_svg_to_canvas(svg), move |state: &mut MainState, button| {
+			let button_name = match button {
+				None => "Touch/Keyboard".to_string(),
+				Some(PointerButton::Primary) => "Left Click".to_string(),
+				Some(PointerButton::Secondary) => "Right Click".to_string(),
+				Some(PointerButton::Auxiliary) => "Middle Click".to_string(),
+				_ => "nah".to_string(),
+			};
+
+			state.zoom_level += 1;
+
+			tracing::info!("clicked with: {}", button_name);
+		})
 	})
 }
