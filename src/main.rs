@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use tracing::{debug, info};
-use xilem::{Affine, EventLoop, EventLoopBuilder, WidgetView, WindowOptions, Xilem, core::Edit, masonry::{kurbo::Size, properties::types::Length, widgets::ResizeObserver}, view::{canvas, resize_observer, sized_box, virtual_scroll}, winit::error::EventLoopError};
+use xilem::{Affine, EventLoop, EventLoopBuilder, WidgetView, WindowOptions, Xilem, core::Edit, masonry::{kurbo::Size, properties::types::Length, widgets::ResizeObserver}, view::{canvas, resize_observer, sized_box, transformed, virtual_scroll}, winit::error::EventLoopError};
 
 struct MainState {
 	canvas_size: (f64, f64),
@@ -61,7 +61,7 @@ impl MainState {
 
 		resize_observer(
 			|state: &mut MainState, size| {
-				tracing::info!("Canvas resized to: {:?}", size);
+				info!("Canvas resized to: {:?}", size);
 				state.canvas_size = (size.width, size.height)
 			},
 			canvas_view,
@@ -74,13 +74,16 @@ fn app(_state: &mut MainState) -> impl WidgetView<Edit<MainState>> + use<> {
 	let svg1 = include_str!("../testing_pdfs/rendered_2.svg");
 	let svg2 = include_str!("../testing_pdfs/rendered_0.svg");
 
-	virtual_scroll(0..2, move |_state: &mut MainState, index| {
+	// TODO: Track zoom level and intercept mouse events
+
+	virtual_scroll(0..2, move |state: &mut MainState, index| {
 		debug!("Virtual scroll rendering item {}", index);
 		let svg = match index {
 			0 => svg1,
 			1 => svg2,
 			_ => unreachable!(),
 		};
-		_state.render_svg_to_canvas(svg)
+
+		transformed(state.render_svg_to_canvas(svg)).transform(Affine::scale(2f64))
 	})
 }
