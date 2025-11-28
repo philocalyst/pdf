@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tracing::{debug, info};
 use vello_svg::vello;
-use xilem::{Affine, EventLoop, EventLoopBuilder, WidgetView, WindowOptions, Xilem, core::Edit, masonry::{kurbo::Size, properties::types::Length, widgets::ResizeObserver}, view::{PointerButton, button_any_pointer, canvas, resize_observer, sized_box, transformed, virtual_scroll}, winit::error::EventLoopError};
+use xilem::{Affine, EventLoop, EventLoopBuilder, WidgetView, WindowOptions, Xilem, core::Edit, masonry::properties::types::Length, view::{PointerButton, button_any_pointer, canvas, resize_observer, sized_box, transformed, virtual_scroll}, winit::error::EventLoopError};
 
 struct MainState {
 	canvas_size: (f64, f64),
@@ -24,6 +24,9 @@ fn main() -> Result<(), EventLoopError> {
 }
 
 fn run(event_loop: EventLoopBuilder) -> Result<(), EventLoopError> {
+	// TODO: Switch to loading from an actual PDF, rather than these test stubs
+	// Ensure the vec is prealloced when the time comes
+
 	// Parse the SVGs at startup
 	let svg1 = include_str!("../testing_pdfs/rendered_2.svg");
 	let svg2 = include_str!("../testing_pdfs/rendered_0.svg");
