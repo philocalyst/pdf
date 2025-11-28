@@ -25,29 +25,42 @@ fn run(event_loop: EventLoopBuilder) -> Result<(), EventLoopError> {
 		.run_in(event_loop)
 }
 
-fn render_svg_to_canvas(svg_str: &'static str) -> impl WidgetView<Edit<MainState>> + use<> {
-	debug!("Rendering SVG to canvas");
+impl MainState {
+	fn render_svg_to_canvas(
+		&self,
+		svg_str: &'static str,
+	) -> impl WidgetView<Edit<MainState>> + use<> {
+		debug!("Rendering SVG to canvas");
 
-	// Parse SVG and generate Vello scene
-	let svg_scene = vello_svg::render(svg_str).unwrap();
-	let tree = usvg::Tree::from_str(svg_str, &usvg::Options::default()).unwrap();
+		// Parse SVG and generate Vello scene
+		let svg_scene = vello_svg::render(svg_str).unwrap();
+		let tree = usvg::Tree::from_str(svg_str, &usvg::Options::default()).unwrap();
 
-	// Obtain the size for intial rendering canvas
-	let svg_size = tree.size();
-	debug!("SVG size: {}x{}", svg_size.width(), svg_size.height());
+		// Obtain the size for intial rendering canvas
+		let svg_size = tree.size();
+		debug!("SVG size: {}x{}", svg_size.width(), svg_size.height());
 
-	sized_box(canvas(Arc::new(move |scene, size| {
-		tracing::trace!("Canvas draw callback invoked with size: {:?}", size);
+		let canvas_view = sized_box(canvas(Arc::new(move |scene, size| {
+			tracing::trace!("Canvas draw callback invoked with size: {:?}", size);
 
-		// Compute scaling
-		let scale_x = size.width / svg_size.width() as f64;
+			// Compute scaling
+			let scale_x = size.width / svg_size.width() as f64;
 
-		// Uniform scaling about SVG center
-		let transform = Affine::scale_about(scale_x, (svg_size.width() / 2.0, svg_size.height() / 2.0));
+			// Uniform scaling about SVG center
+			let transform =
+				Affine::scale_about(scale_x, (svg_size.width() / 2.0, svg_size.height() / 2.0));
 
-		scene.append(&svg_scene, Some(transform));
-	})))
-	.height(Length::px((svg_size.height() + 400f32) as f64))
+			scene.append(&svg_scene, Some(transform));
+		})))
+		.height(Length::px((svg_size.height() + 400f32) as f64));
+
+		resize_observer(
+			|_state: &mut MainState, size| {
+				tracing::info!("Canvas resized to: {:?}", size);
+			},
+			canvas_view,
+		)
+	}
 }
 
 fn app(_state: &mut MainState) -> impl WidgetView<Edit<MainState>> + use<> {
@@ -62,13 +75,6 @@ fn app(_state: &mut MainState) -> impl WidgetView<Edit<MainState>> + use<> {
 			1 => svg2,
 			_ => unreachable!(),
 		};
-		let canvas = render_svg_to_canvas(svg);
-
-		resize_observer(
-			|_state: &mut MainState, size| {
-				tracing::info!("Canvas resized to: {:?}", size);
-			},
-			canvas,
-		)
+		_state.render_svg_to_canvas(svg)
 	})
 }
